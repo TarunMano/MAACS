@@ -17,7 +17,7 @@ Read in the data with `read_csv()` and store the data as an R object named `data
 ## Load the data and any necessary packages here.
 library(dplyr)
 library(ggplot2)
-maacs = read.csv("maacs.csv.gz")
+maacs = read.csv("\MAACS\maacs.csv.gz")
 
 ```
 
