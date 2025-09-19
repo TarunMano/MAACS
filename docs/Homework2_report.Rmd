@@ -1,0 +1,229 @@
+---
+title: "Homework 2 Report"
+output: html_document
+---
+
+
+## Name
+
+Tarun Manoharan
+
+### Setup
+
+Read in the data with `read_csv()` and store the data as an R object named `dataset`. Check the data to make sure all of the expected observations and variables are there.
+
+
+```{r, message = FALSE}
+## Load the data and any necessary packages here.
+library(dplyr)
+library(ggplot2)
+maacs = read.csv("maacs.csv.gz")
+
+```
+
+## Part 1
+
+We will first consider the relationship between FEV1 and age. In general, it is expected that as children get older (and hence, larger in size), their FEV1 values should get higher. 
+
+Consider the statement "FEV1 values in children are higher in older children relative to younger children". 
+
+Write a function in R that takes the `dataset` object as an argument and returns `TRUE` if the statement above is true for the dataset and `FALSE` otherwise. 
+
+NOTE: In order to write this function, you will need to translate the statement above into something that can be checked with the data. There are many ways in which you can do that translation correctly and you only need to pick one way here. 
+
+NOTE: For this part, do not use any plots.
+
+```{r}
+## Write your function here
+
+check = function(data){
+  median =  median(data$age)
+  
+  younger_range = data %>% filter(age <= median)
+  older_range = data %>% filter(age > median)
+  
+  
+  if (mean(older_range$fev1, na.rm = TRUE) > mean(younger_range$fev1, na.rm = TRUE)){
+    return(TRUE)
+  }
+  return(FALSE)
+}
+
+check(maacs)
+
+```
+
+
+## Part 2
+
+Fit a linear regression model with FEV1 as the outcome and age as a predictor.
+
+How much does FEV1 change for a 1-year increase in the child's age? 
+
+```{r}
+## Add your code here
+
+model = lm(fev1 ~ age, data = maacs)
+summary(model)
+
+```
+
+
+Write your data analysis statement interpreting the regression model here:
+
+The linear regression model examined the relationship between age (in years) and FEV1 (forced expiratory volume in 1 second, in liters) among participants. The model shows that age is a somewhat strong and significant predictor of FEV1 with a slope of 0.171. This indicates that, there is an expected increase in FEV1 by 0.171 liters for each additional year of age.
+
+## Part 3
+
+Develop **three** supporting premises derived from the data that support the statement you wrote in Part 2. These can be plots, other summary statistics, or model results. 
+
+NOTE: 
+
+* At least one supporting premise should use a plot.
+
+* Do not use the code you write in Part 1 as a supporting premise
+
+```{r}
+## Add your code here
+
+```
+
+
+Write the three supporting premise statements here:
+
+1. The slope of the line best fit follows an upward slope. 
+
+2. The model accounts for a moderate to good percentage of the variance in FEV1, and is statistically significant. 
+
+3. The difference in means comparing younger and older children show significantly higher average FEV1 values in older participants
+
+
+## Part 4
+
+For each of the supporting premises above, write a function that takes the `dataset` object as an argument and returns `TRUE` if the supporting premise statement above is true for the dataset and `FALSE` otherwise. 
+
+For statements involving plots, instead of returning `TRUE` or `FALSE`, you function should do two things:
+
+1. Produce the plot that is used in the statement
+
+2. Produce a hypothetical version of the plot in the event that the statement is true. This can be done using simulated data or by simply hand drawing a plot.
+```{r}
+
+length(maacs$age)
+```
+
+```{r, message = FALSE}
+## Function for supporting premise statement 1
+
+plots = function(df){
+  set.seed(42)
+
+  sim_age = seq(min(df$age), max(df$age), length.out = 150)
+
+
+  true_intercept = -0.1
+  true_slope = 0.171
+  error = rnorm(150, mean = 0, sd = 0.3)
+
+  sim_fev1 = true_slope * sim_age + true_intercept + error
+
+  sim_data = data.frame(sim_age, sim_fev1)
+
+true_data =   ggplot(subset(df, !is.na(fev1)), aes(x = age, y = fev1)) +
+    geom_point(color = "springgreen") + 
+    geom_smooth(method = "lm", se = FALSE, color = "blue", linewidth = 2) + 
+    labs(
+      title = "Age vs FEV1",
+      x = "Age",
+      y = "FEV1 (liters)"
+    ) + 
+    theme_minimal()
+
+
+sim_data =   ggplot(sim_data, aes(x = sim_age, y = sim_fev1)) +
+    geom_point(color = "steelblue") +
+    geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 2) +
+    labs(
+      title = "Simulated Age vs FEV1",
+      x = "Age ",
+      y = "FEV1 (liters)"
+    ) +
+    theme_minimal()
+
+print(true_data)
+print(sim_data)
+
+  
+}
+
+
+plots(maacs)
+
+```
+
+
+```{r}
+## Function for supporting premise statement 2
+
+r2_significance = function(df){
+  model = lm(fev1 ~ age, data = df)
+  
+  r2 = summary(model)$r.squared
+  pval = summary(model)$coefficients[2,4]
+  
+  if(r2 > 0.60 && pval < 0.05){
+    return(TRUE)
+  }
+  else{
+    return(FALSE)
+  }
+
+}
+
+r2_significance(maacs)
+
+```
+
+
+```{r}
+## Function for supporting premise statement 3
+diff_means = function(df){
+  
+  median =  median(df$age)
+  
+  younger = df %>% filter(age <= median)
+  older = df %>% filter(age > median)
+  
+  
+
+  result = t.test(older$fev1, younger$fev1, var.equal = FALSE)
+  estimates = result$estimate
+  
+  pval  <- result$p.value
+  
+  if (estimates[1] > estimates[2] && pval < 0.05) {
+    return(TRUE)
+  }
+  else{
+    return(FALSE)
+  }
+}
+
+diff_means(maacs)
+
+```
+
+Execute each of your function and show that the produce the expected output.
+
+
+
+
+## Part 5
+
+Describe one alternative to the primary statement "FEV1 values in children are higher in older children relative to younger children". 
+
+Create a fault tree for the alternative outcome describing how the alternative outcome could be realized in the data even if the primary statement were true.
+
+Your fault tree should be created as a separate image and does not need to be created in R. Upload the image of the fault tree to Canvas.
+
+
